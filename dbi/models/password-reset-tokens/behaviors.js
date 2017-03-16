@@ -35,8 +35,10 @@ module.exports = (models) => {
     return this.findOne(options)
     .then(resetToken => {
       if (!resetToken) return Promise.reject(new Error('Token provided is not a valid reset token.'));
+      // Check if token is invalid.
+      if (resetToken.invalidatedAt) return Promise.reject(new Error('Password Reset Token was invalided.'));
       // Check if token has already been redeemed.
-      if (resetToken.redeemed) return Promise.reject(new Error('Password Reset Token has already been redeemed.'));
+      if (resetToken.redeemedAt) return Promise.reject(new Error('Password Reset Token has already been redeemed.'));
       // Check if token is expired.
       const expiresAt = new Date(resetToken.expiresAt).getTime();
       if (Date.now() > expiresAt) return Promise.reject(new Error('Provided token is expired.'));
@@ -49,7 +51,7 @@ module.exports = (models) => {
 
       // Redeem token.
       options.returning = true;
-      return this.update({redeemed: true}, options)
+      return this.update({redeemedAt: Date.now()}, options)
       .spread((updateCount, values) => values[0]);
     });
   };
@@ -68,16 +70,16 @@ module.exports = (models) => {
    *
    */
   behaviors.hooks.beforeCreate = [
-    // Ensure that no pending password reset tokens are out for the current user.
+    // Invalidate all existing, valid tokens for the user.
     (content, options) => {
-      return models.PasswordResetToken.findOne({
-        auth_user_id: content.auth_user_id,
-        redeemed: false,
-        expiredAt: {gt: Date.now()}
-      })
-      .then(passwordResetToken => {
-        if (passwordResetToken) {
-          return Promise.reject(new Error('There is already an unexpired, unredeemed password reset token out for this user.'));
+      const now = Date.now();
+      return models.PasswordResetToken.update({invalidatedAt: now},
+      {
+        where: {
+          auth_user_id: content.auth_user_id,
+          invalidatedAt: null,
+          redeemedAt: null,
+          expiresAt: {$gt: now}
         }
       })
       .return(content);

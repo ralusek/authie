@@ -8,7 +8,8 @@ const CONSTANTS = require('./constants');
 const DEFINITION_OBJECT = {
   token: {type: Sequelize.UUID, primaryKey: true, defaultValue: Sequelize.UUIDV4},
   expiresAt: {type: Sequelize.DATE, allowNull: false},
-  redeemed: {type: Sequelize.BOOLEAN, defaultValue: false, allowNull: false}
+  redeemedAt: {type: Sequelize.DATE},
+  invalidatedAt: {type: Sequelize.DATE}
 };
 
 /**
@@ -25,6 +26,15 @@ const CONFIGURATION_OBJECT = {
   indexes : [
     {
       fields: ['auth_user_id']
+    },
+    {
+      fields: ['expiresAt']
+    },
+    {
+      fields: ['redeemedAt']
+    },
+    {
+      fields: ['invalidatedAt']
     }
   ]
 };
