@@ -71,9 +71,11 @@ module.exports = (models) => {
     // Ensure that no pending password reset tokens are out for the current user.
     (content, options) => {
       return models.PasswordResetToken.findOne({
-        auth_user_id: content.auth_user_id,
-        redeemed: false,
-        expiredAt: {gt: Date.now()}
+        where : {
+          auth_user_id: content.auth_user_id,
+          redeemed: false,
+          expiresAt: { $gt: Date.now() }
+        }
       })
       .then(passwordResetToken => {
         if (passwordResetToken) {

@@ -69,7 +69,7 @@ module.exports = (models, cache) => {
   /**
    *
    */
-  behaviors.classMethods.updatePassword = function(auth_user_id, newPassword) {
+  behaviors.classMethods.updatePassword = function(auth_user_id, newPassword, options) {
     return this.hashPassword({password: newPassword}, options)
     .then(modified => this.update(modified, {
       where: {id: auth_user_id},
