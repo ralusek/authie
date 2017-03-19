@@ -88,7 +88,7 @@ module.exports = class AuthenticationService {
     return p(this).deferrari.deferUntil(CONNECTED)
     .then(models => {
       if (!credentials) return Promise.reject(new Error('Login requires credentials be provided'));
-      
+
       return models.AuthUser.fetchByCredentials(credentials)
       .then(authUser => {
         // Generate payload for authUser, add random to ensure token uniqueness within
@@ -140,7 +140,7 @@ module.exports = class AuthenticationService {
       .spread(authToken => {
         if (!authToken) return Promise.reject(new Error('Token not found.'));
         if (!authToken.valid) return Promise.reject(new Error('Token invalid.'));
-        
+
         return authToken;
       });
     });
@@ -187,7 +187,7 @@ module.exports = class AuthenticationService {
   requestPasswordResetToken(email) {
     return p(this).deferrari.deferUntil(CONNECTED)
     .then(models => {
-      return models.AuthUserModel.findOne({email})
+      return models.AuthUser.findOne({where: {email}})
       .then(authUser => {
         if (!authUser) return Promise.reject(new Error(`No AuthUser found for provided email ${email}. Cannot create reset token.`));
         return models.PasswordResetToken.create({auth_user_id: authUser.id});
@@ -203,7 +203,7 @@ module.exports = class AuthenticationService {
   redeemPasswordResetToken(passwordResetToken, newPassword, optionalEmail) {
     return p(this).deferrari.deferUntil(CONNECTED)
     .then(models => {
-      return sequelize.transaction(t => {
+      return p(this).sequelize.transaction(t => {
         const options = {transaction: t};
         return models.PasswordResetToken.redeem(passwordResetToken, options, optionalEmail)
         .then(passwordResetToken => {
