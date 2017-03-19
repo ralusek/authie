@@ -190,7 +190,7 @@ module.exports = class AuthenticationService {
       return models.AuthUser.findOne({where: {email}})
       .then(authUser => {
         if (!authUser) return Promise.reject(new Error(`No AuthUser found for provided email ${email}. Cannot create reset token.`));
-        return models.PasswordResetToken.create({auth_user_id: authUser.id, expiresAt : new Date()});
+        return models.PasswordResetToken.create({auth_user_id: authUser.id});
       });
     });
   }

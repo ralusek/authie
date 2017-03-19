@@ -69,6 +69,16 @@ module.exports = (models) => {
   /**
    *
    */
+  behaviors.hooks.beforeValidate = [
+    // Set token expiration.
+    (content, options) => {
+      if (!content.expiresAt) content.expiresAt = new Date(Date.now() + CONSTANTS.EXPIRATION);
+    }
+  ];
+
+  /**
+   *
+   */
   behaviors.hooks.beforeCreate = [
     // Invalidate all existing, valid tokens for the user.
     (content, options) => {
@@ -83,11 +93,6 @@ module.exports = (models) => {
         }
       })
       .return(content);
-    },
-
-    // Set token expiration.
-    (content, options) => {
-      content.expiresAt = new Date(Date.now() + CONSTANTS.EXPIRATION);
     }
   ];
 
