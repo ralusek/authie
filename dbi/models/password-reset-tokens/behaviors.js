@@ -84,14 +84,14 @@ module.exports = (models) => {
     (content, options) => {
       const now = new Date();
       return models.PasswordResetToken.update({invalidatedAt: now},
-        {
-          where: {
-            auth_user_id: content.auth_user_id,
-            invalidatedAt: null,
-            redeemedAt: null,
-            expiresAt: {$gt: now}
-          }
-        })
+      {
+        where: {
+          auth_user_id: content.auth_user_id,
+          invalidatedAt: null,
+          redeemedAt: null,
+          expiresAt: {$gt: now}
+        }
+      })
       .return(content);
     }
   ];
