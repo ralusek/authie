@@ -45,7 +45,7 @@ module.exports = (models) => {
 
       // If optional email was provided, here is where we check to ensure that it
       // matches user associated with the reset token.
-      if (optionalEmail && (_.get(resetToken, 'authUser.email') !== optionalEmail)) {
+      if (optionalEmail && (_.get(resetToken, 'auth_user.email') !== optionalEmail)) {
         return Promise.reject(new Error(`Password Reset Token not associated with provided email: ${optionalEmail}`));
       } 
 
@@ -82,16 +82,16 @@ module.exports = (models) => {
   behaviors.hooks.beforeCreate = [
     // Invalidate all existing, valid tokens for the user.
     (content, options) => {
-      const now = Date.now();
+      const now = new Date();
       return models.PasswordResetToken.update({invalidatedAt: now},
-      {
-        where: {
-          auth_user_id: content.auth_user_id,
-          invalidatedAt: null,
-          redeemedAt: null,
-          expiresAt: {$gt: now}
-        }
-      })
+        {
+          where: {
+            auth_user_id: content.auth_user_id,
+            invalidatedAt: null,
+            redeemedAt: null,
+            expiresAt: {$gt: now}
+          }
+        })
       .return(content);
     }
   ];

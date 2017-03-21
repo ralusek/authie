@@ -1,6 +1,7 @@
 'use strict';
 
 const _ = require('lodash');
+const AppErr = require('punch-error');
 
 module.exports = (service) => {
   const MW = {};
