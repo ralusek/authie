@@ -82,7 +82,7 @@ module.exports = (models) => {
   behaviors.hooks.beforeCreate = [
     // Invalidate all existing, valid tokens for the user.
     (content, options) => {
-      const now = Date.now();
+      const now = new Date();
       return models.PasswordResetToken.update({invalidatedAt: now},
       {
         where: {

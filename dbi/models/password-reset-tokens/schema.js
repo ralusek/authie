@@ -44,7 +44,7 @@ const CONFIGURATION_OBJECT = {
  */
 const RELATIONSHIP_DEFINITIONS = {
   USER: models => {
-    models.PasswordResetToken.belongsTo(models.AuthUser, {foreignKey: {allowNull: false}, onDelete: 'CASCADE'});
+    models.PasswordResetToken.belongsTo(models.AuthUser, {as: 'authUser', foreignKey: {allowNull: false}, onDelete: 'CASCADE'});
   }
 };
 

@@ -72,9 +72,10 @@ module.exports = (models, cache) => {
   behaviors.classMethods.updatePassword = function(auth_user_id, newPassword, options) {
     return this.hashPassword({password: newPassword}, options)
     .then(modified => this.update(modified, {
-      where: {id: auth_user_id},
-      returning: true
-    }))
+        where: {id: auth_user_id},
+        returning: true
+      })
+    )
     .spread((updateCount, values) => values[0]);
   };
 
@@ -102,10 +103,13 @@ module.exports = (models, cache) => {
 /*********************************** HOOKS  ***********************************/
 /******************************************************************************/
 
+
   /**
-   * Before Validate hooks.
+   * Before Create hooks.
    */
-  behaviors.hooks.beforeValidate = [
+  behaviors.hooks.beforeCreate = [
+    // Hash password.
+    (authUser, options) => models.AuthUser.hashPassword(authUser, options),
     // Require email.
     (authUser, options) => {
       if (!authUser.email) return Promise.reject(new Error('AuthUser email required.'));
@@ -120,15 +124,6 @@ module.exports = (models, cache) => {
         return Promise.reject(new Error(`${authUser.email} is not a valid email address.`));
       }
     }
-  ];
-
-
-  /**
-   * Before Create hooks.
-   */
-  behaviors.hooks.beforeCreate = [
-    // Hash password.
-    (authUser, options) => models.AuthUser.hashPassword(authUser, options)
   ];
 
 

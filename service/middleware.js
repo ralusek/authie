@@ -28,7 +28,7 @@ module.exports = (service) => {
     (req, res, next) => {
       const authUserId = _.get(req, 'authUser.id');
       if (!authUserId) {
-        return next(AppErr.pass(null, {status: 401, message: 'Unauthorized.'}));
+        return next(new Error('Unauthorized.'));
       }
       next();
     }
