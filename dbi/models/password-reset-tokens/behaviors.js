@@ -45,7 +45,7 @@ module.exports = (models) => {
 
       // If optional email was provided, here is where we check to ensure that it
       // matches user associated with the reset token.
-      if (optionalEmail && (_.get(resetToken, 'auth_user.email') !== optionalEmail)) {
+      if (optionalEmail && (_.get(resetToken, 'authUser.email') !== optionalEmail)) {
         return Promise.reject(new Error(`Password Reset Token not associated with provided email: ${optionalEmail}`));
       } 
 
