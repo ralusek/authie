@@ -30,7 +30,7 @@ module.exports = (models) => {
     // Performs join if optional email is provided so as to include AuthUser.
     // Rather than inner join filtering, we just check the response so that we
     // can give a better error message.
-    if (optionalEmail) options.include = [{model: models.AuthUser}];
+    if (optionalEmail) options.include = [{model: models.AuthUser, as: 'authUser'}];
 
     return this.findOne(options)
     .then(resetToken => {
