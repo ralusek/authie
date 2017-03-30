@@ -13,7 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "bluebird": "^3.5.0",
-    "cachie": "0.0.13",
+    "cachie": "0.0.14",
     "deferrari": "^1.0.3",
     "email-validator": "^1.0.7",
     "lodash": "^4.17.4",
