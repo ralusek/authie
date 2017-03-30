@@ -1,6 +1,6 @@
 {
   "name": "authie",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "Authentication.",
   "main": "service/index.js",
   "scripts": {
