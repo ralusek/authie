@@ -212,7 +212,20 @@ module.exports = class AuthenticationService {
       });
     });
   }
-}
+
+
+  /**
+   * Remove user for a given email address.
+   */
+  removeUser(email) {
+    return p(this).deferrari.deferUntil(CONNECTED)
+    .then(models => models.AuthUser.findOne({where: {email}})
+    .then(authUser => {
+      if (!authUser) return Promise.reject(new Error(`No AuthUser found for provided email ${email}. Cannot remove user.`));
+      return authUser.destroy({individualHooks: true});
+    }))
+  }
+};
 
 
 
