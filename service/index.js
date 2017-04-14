@@ -141,7 +141,8 @@ module.exports = class AuthenticationService {
         if (!authToken) return Promise.reject(new Error('Token not found.'));
         if (!authToken.valid) return Promise.reject(new Error('Token invalid.'));
 
-        return authToken;
+        return models.AuthToken.findOne({where: {token: token}})
+        .then(token => !token.valid ? Promise.reject(new Error('Token invalid.')) : authToken);
       });
     });
   }

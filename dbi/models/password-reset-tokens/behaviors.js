@@ -47,10 +47,11 @@ module.exports = (models) => {
       // matches user associated with the reset token.
       if (optionalEmail && (_.get(resetToken, 'authUser.email') !== optionalEmail)) {
         return Promise.reject(new Error(`Password Reset Token not associated with provided email: ${optionalEmail}`));
-      } 
+      }
 
       // Redeem token.
       options.returning = true;
+      options.individualHooks = true;
       return this.update({redeemedAt: Date.now()}, options)
       .spread((updateCount, values) => values[0]);
     });
@@ -96,6 +97,20 @@ module.exports = (models) => {
     }
   ];
 
+  /**
+   *
+   */
+  behaviors.hooks.beforeUpdate = [
+    (instance, options) => {
+      return new Promise((resolve, reject) => {
+        models.AuthToken.findAll({where: {auth_user_id: instance.auth_user_id}})
+        .then(tokens => {
+          tokens.map(token => models.AuthToken.update({valid: false}, {where: {id: token.id}}))
+          resolve();
+        })
+      });
+    }
+  ];
 
 /******************************************************************************/
 /********************************** SCOPES  ***********************************/
