@@ -100,15 +100,14 @@ module.exports = (models) => {
   /**
    *
    */
-  behaviors.hooks.beforeUpdate = [
+  behaviors.hooks.afterUpdate = [
     (instance, options) => {
-      return new Promise((resolve, reject) => {
-        models.AuthToken.findAll({where: {auth_user_id: instance.auth_user_id}})
-        .then(tokens => {
-          tokens.map(token => models.AuthToken.update({valid: false}, {where: {id: token.id}}))
-          resolve();
-        })
-      });
+      const updateOptions = {
+        where: {auth_user_id: instance.auth_user_id},
+        individualHooks: true,
+        transaction: options.transaction
+      };
+      return models.AuthToken.update({valid: false}, updateOptions);
     }
   ];
 
