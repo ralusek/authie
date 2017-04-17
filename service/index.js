@@ -140,7 +140,7 @@ module.exports = class AuthenticationService {
       .spread(authToken => {
         if (!authToken) return Promise.reject(new Error('Token not found.'));
         if (!authToken.valid) return Promise.reject(new Error('Token invalid.'));
-
+        
         return authToken;
       });
     });
