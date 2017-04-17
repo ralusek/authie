@@ -217,13 +217,13 @@ module.exports = class AuthenticationService {
   /**
    * Remove user for a given email address.
    */
-  removeUser(email) {
+  removeUser(email, strict) {
+    if (!email) return Promise.reject(new Error('Cannot removeUser, no email provided.'));
     return p(this).deferrari.deferUntil(CONNECTED)
-    .then(models => models.AuthUser.findOne({where: {email}})
-    .then(authUser => {
-      if (!authUser) return Promise.reject(new Error(`No AuthUser found for provided email ${email}. Cannot remove user.`));
-      return authUser.destroy({individualHooks: true});
-    }))
+    .then(models => models.AuthUser.destroy({where: {email}, individualHooks: true}))
+    .tap(deletedCount => {
+      if (!deletedCount && (strict === true)) return Promise.reject(new Error(`Failed to remove user: ${email}.`));
+    }));
   }
 };
 
