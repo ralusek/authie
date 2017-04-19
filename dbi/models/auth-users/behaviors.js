@@ -70,9 +70,12 @@ module.exports = (models, cache) => {
    *
    */
   behaviors.classMethods.updatePassword = function(auth_user_id, newPassword, options) {
+    options = options || {};
+    options.explicitPasswordUpdate = true;
     return this.hashPassword({password: newPassword}, options)
     .then(modified => this.update(modified, {
         where: {id: auth_user_id},
+        individualHooks: true,
         returning: true
       })
     )
@@ -102,6 +105,29 @@ module.exports = (models, cache) => {
 /******************************************************************************/
 /*********************************** HOOKS  ***********************************/
 /******************************************************************************/
+
+  /**
+   *
+   */
+  behaviors.hooks.beforeValidate = [
+    (authUser, options) => {
+      // Set this so that 1.) it can't be set by client, and 2.) non-null not-
+      // empty validation passes.
+      authUser.hashedPW = 'hash';
+    }
+  ];
+
+
+  /**
+   *
+   */
+  behaviors.hooks.beforeUpdate = [
+    (authUser, options) => {
+      if (!options.explicitPasswordUpdate) {
+        delete authUser.hashedPW;
+      }
+    }
+  ];
 
 
   /**

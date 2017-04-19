@@ -11,6 +11,8 @@ const DEFINITION_OBJECT = {
   phone: {type: Sequelize.STRING},
   hashedPW: {
     type: Sequelize.STRING,
+    allowNull: false,
+    notEmpty: true
     // validate: {
     //   is: /^(?=.*\d).{6,}$/
     // }
