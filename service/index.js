@@ -140,7 +140,7 @@ module.exports = class AuthenticationService {
       .spread(authToken => {
         if (!authToken) return Promise.reject(new Error('Token not found.'));
         if (!authToken.valid) return Promise.reject(new Error('Token invalid.'));
-
+        
         return authToken;
       });
     });
@@ -212,7 +212,20 @@ module.exports = class AuthenticationService {
       });
     });
   }
-}
+
+
+  /**
+   * Remove user for a given email address.
+   */
+  removeUser(email, strict) {
+    if (!email) return Promise.reject(new Error('Cannot removeUser, no email provided.'));
+    return p(this).deferrari.deferUntil(CONNECTED)
+    .then(models => models.AuthUser.destroy({where: {email}, individualHooks: true}))
+    .tap(deletedCount => {
+      if (!deletedCount && (strict === true)) return Promise.reject(new Error(`Failed to remove user: ${email}.`));
+    }));
+  }
+};
 
 
 
