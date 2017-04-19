@@ -223,7 +223,7 @@ module.exports = class AuthenticationService {
     .then(models => models.AuthUser.destroy({where: {email}, individualHooks: true}))
     .tap(deletedCount => {
       if (!deletedCount && (strict === true)) return Promise.reject(new Error(`Failed to remove user: ${email}.`));
-    }));
+    });
   }
 };
 
