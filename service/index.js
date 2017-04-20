@@ -138,7 +138,7 @@ module.exports = class AuthenticationService {
       .spread(authToken => {
         if (!authToken) return Promise.reject(new Error('Token not found.'));
         if (!authToken.valid) return Promise.reject(new Error('Token invalid.'));
-        
+
         return authToken;
       });
     });
@@ -223,6 +223,19 @@ module.exports = class AuthenticationService {
       if (!deletedCount && (strict === true)) return Promise.reject(new Error(`Failed to remove user: ${email}.`));
     });
   }
+
+  /**
+   * Update user password.
+   */
+  updatePassword(authUserId, oldPassword, newPassword, confirmPassword) {
+    if (!oldPassword) return Promise.reject(new Error('Cannot updatePassword, no oldPassword provided.'));
+    if (!newPassword) return Promise.reject(new Error('Cannot updatePassword, no newPassword provided.'));
+    if (!confirmPassword) return Promise.reject(new Error('Cannot updatePassword, no confirmPassword provided.'));
+    if (!(newPassword === confirmPassword)) return Promise.reject(new Error('Cannot updatePassword, confirmPassword and password not equal.'));
+
+    return p(this).deferrari.deferUntil(CONNECTED)
+    .then(models => models.AuthUser.changePassword(authUserId, oldPassword, newPassword, confirmPassword));
+  };
 };
 
 
