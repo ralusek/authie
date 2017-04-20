@@ -233,7 +233,6 @@ module.exports = (models, cache) => {
   function checkPassword(provided, existing) {
     return new Promise((resolve, reject) => {
       return bcrypt.compare(provided, existing, (err, isMatch) => {
-        console.log(isMatch);
         if (err) return reject(new Error('Error occurred checking password.' + err.stack));
         if (!isMatch) return reject(new Error('Provided password does not match existing.'));
         resolve();
