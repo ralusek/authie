@@ -139,7 +139,7 @@ module.exports = class AuthenticationService {
       )
       .spread(authToken => {
         if (!authToken) return Promise.reject(new Error('Token not found.'));
-        if (!authToken.valid) return Promise.reject(new Error('Token invalid.'));
+        if (authToken.invalidatedAt) return Promise.reject(new Error('Token invalid.'));
         
         return authToken;
       });
@@ -152,32 +152,16 @@ module.exports = class AuthenticationService {
    */
   invalidateToken(token) {
     return p(this).deferrari.deferUntil(CONNECTED)
-    .then(models => {
-      if (!token) return Promise.reject('No token provided to invalidate.');
-      return models.AuthToken.update({valid: false}, {
-        where: {token},
-        individualHooks: true,
-        returning: true
-      })
-      .spread((affected, results) => results && results.length ? results[0].toJSON() : null);
-    });
+    .then(models => models.AuthToken.invalidateToken(token));
   }
 
 
   /**
    * Invalidate all by authUser.
    */
-  invalidateAll(token) {
+  invalidateAll(auth_user_id) {
     return p(this).deferrari.deferUntil(CONNECTED)
-    .then(models => {
-      return this.verifyToken(token)
-      .then(authToken => {
-        return models.AuthToken.update({valid: false}, {
-          where: {auth_user_id: authToken.auth_user_id, valid: true},
-          individualHooks: true
-        });
-      });
-    });
+    .then(models => models.AuthToken.invalidateAll(auth_user_id));
   }
 
 

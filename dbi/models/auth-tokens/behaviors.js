@@ -52,6 +52,38 @@ module.exports = (models, cache) => {
   };
 
 
+  /**
+   *
+   */
+  behaviors.classMethods.invalidateToken = function(token, options) {
+    if (!token) return Promise.reject('No token provided to invalidate.');
+    options = options || {};
+    options.where = {token};
+    options.individualHooks = true;
+    options.returning = true;
+
+    return models.AuthToken.update({invalidatedAt: new Date()}, options)
+    .spread((affected, results) => results && results.length ? results[0].toJSON() : null);
+  };
+
+
+  /**
+   *
+   */
+  behaviors.classMethods.invalidateAll = function(auth_user_id, options) {
+    if (!auth_user_id) return Promise.reject(new Error('Auth Tokens invalidateAll requires auth_user_id be provided.'));
+
+    options = options || {};
+    options.where = {
+      auth_user_id: authToken.auth_user_id,
+      invalidatedAt: null,
+      expiresAt: {$gt: now}
+    };
+    options.individualHooks = true;
+    return models.AuthToken.update({invalidatedAt: new Date()}, options);
+  };
+
+
 /******************************************************************************/
 /***************************** INSTANCE METHODS  ******************************/
 /******************************************************************************/
