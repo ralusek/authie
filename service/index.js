@@ -4,6 +4,7 @@ const Promise = require('bluebird');
 const Deferrari = require('deferrari');
 const Cachie = require('cachie');
 const jwt = require('jsonwebtoken');
+const uuid4 = require('uuid4');
 
 const sequelizeConnect = require('../database/sequelize');
 const bootstrapModels = require('../dbi/models').bootstrap;
@@ -91,11 +92,8 @@ module.exports = class AuthenticationService {
 
       return models.AuthUser.fetchByCredentials(credentials)
       .then(authUser => {
-        // Generate payload for authUser, add random to ensure token uniqueness within
-        // timestamp crowding.
-        const payload = Object.assign(authUser, {random: Math.random()});
-        // Generate token for payload.
-        return signToken(payload, p(this).tokenSecret, p(this).tokenOptions)
+        // Generate token.
+        return signToken(uuid4(), p(this).tokenSecret, p(this).tokenOptions)
         // Create AuthToken in DB.
         .tap(token => models.AuthToken.create({token, auth_user_id: authUser.id, provider: p(this).provider}))
         // Go redundantly through verify token path to ensure consistentcy in

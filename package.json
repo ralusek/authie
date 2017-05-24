@@ -1,6 +1,6 @@
 {
   "name": "authie",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "description": "Authentication.",
   "main": "service/index.js",
   "scripts": {
@@ -20,6 +20,7 @@
     "lodash": "^4.17.4",
     "pg": "^6.1.2",
     "sequelize": "^3.30.2",
+    "uuid4": "^1.0.0",
     "winston": "^2.3.1"
   }
 }
