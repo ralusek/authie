@@ -73,11 +73,11 @@ module.exports = (models, cache) => {
     options = options || {};
     options.explicitPasswordUpdate = true;
     return this.hashPassword({password: newPassword}, options)
-    .then(modified => this.update(modified, {
+    .then(modified => this.update(modified, Object.assign({
         where: {id: auth_user_id},
         individualHooks: true,
         returning: true
-      })
+      }, options))
     )
     .spread((updateCount, values) => values[0]);
   };
@@ -113,7 +113,9 @@ module.exports = (models, cache) => {
     (authUser, options) => {
       // Set this so that 1.) it can't be set by client, and 2.) non-null not-
       // empty validation passes.
-      authUser.hashedPW = 'hash';
+      if (!options.explicitPasswordUpdate) {
+        authUser.hashedPW = 'hash';
+      }
     }
   ];
 
