@@ -58,8 +58,9 @@ module.exports = class AuthenticationService {
 
   connect(config) {
     config = config || {};
+
     // Establish connections on behalf of service.
-    p(this).sequelize = sequelizeConnect.newClient(config.db);
+    p(this).sequelize = config.sequelizeClient || sequelizeConnect.newClient(config.db);
 
     // TODO use redis.
     p(this).modelCache = new Cachie({
