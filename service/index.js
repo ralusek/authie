@@ -94,7 +94,7 @@ module.exports = class AuthenticationService {
       return models.AuthUser.fetchByCredentials(credentials)
       .then(authUser => {
         // Generate token.
-        return signToken(uuid4(), p(this).tokenSecret, p(this).tokenOptions)
+        return signToken({id: uuid4()}, p(this).tokenSecret, p(this).tokenOptions)
         // Create AuthToken in DB.
         .tap(token => models.AuthToken.create({token, auth_user_id: authUser.id, provider: p(this).provider}))
         // Go redundantly through verify token path to ensure consistentcy in
