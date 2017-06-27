@@ -220,8 +220,12 @@ module.exports = class AuthenticationService {
     if (!email) return Promise.reject(new Error('Cannot updateUserEmail, no email provided.'));
     return p(this).deferrari.deferUntil(CONNECTED)
     .then(models => {
-      return models.AuthUser.updateEmail(authUserId, email);
-    })
+      return models.AuthUser.update(email, {
+        where: {id: authUserId},
+        individualHooks: true,
+        returning: true
+      });
+    });
   }
 
 
