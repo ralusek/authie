@@ -86,6 +86,21 @@ module.exports = (models, cache) => {
   /**
    *
    */
+  behaviors.classMethods.updateEmail = function(auth_user_id, newEmail, options) {
+    options = options || {};
+
+    return this.update({email: newEmail},
+      Object.assign({
+      where: {id: auth_user_id},
+      individualHooks: true,
+      returning: true
+    }, options))
+  };
+
+
+  /**
+   *
+   */
   behaviors.classMethods.hashPassword = function(authUser, options) {
     if (!authUser.password) return Promise.reject(new Error('No password provided.'));
 

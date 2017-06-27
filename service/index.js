@@ -214,6 +214,18 @@ module.exports = class AuthenticationService {
 
 
   /**
+   * Update user email address
+   */
+  updateUserEmail(authUserId, email) {
+    if (!email) return Promise.reject(new Error('Cannot updateUserEmail, no email provided.'));
+    return p(this).deferrari.deferUntil(CONNECTED)
+    .then(models => {
+      return models.AuthUser.updateEmail(authUserId, email);
+    })
+  }
+
+
+  /**
    * Remove user for a given email address.
    */
   removeUser(email, strict) {
