@@ -58,6 +58,24 @@ module.exports = (models) => {
   };
 
 
+  /**
+   *
+   */
+  behaviors.classMethods.invalidateAll = function(auth_user_id, options) {
+    if (!auth_user_id) return Promise.reject(new Error('Password Reset Tokens invalidateAll requires auth_user_id be provided.'));
+
+    options = options || {};
+    options.where = {
+      auth_user_id: auth_user_id,
+      invalidatedAt: null,
+      redeemedAt: null,
+      expiresAt: {$gt: now}
+    };
+
+    return models.PasswordResetToken.update({invalidatedAt: now}, options);
+  };
+
+
 /******************************************************************************/
 /***************************** INSTANCE METHODS  ******************************/
 /******************************************************************************/
@@ -83,17 +101,8 @@ module.exports = (models) => {
   behaviors.hooks.beforeCreate = [
     // Invalidate all existing, valid tokens for the user.
     (content, options) => {
-      const now = new Date();
-      return models.PasswordResetToken.update({invalidatedAt: now},
-      {
-        where: {
-          auth_user_id: content.auth_user_id,
-          invalidatedAt: null,
-          redeemedAt: null,
-          expiresAt: {$gt: now}
-        }
-      })
-      .return(content);
+      options = {transaction: _.get(options, 'transaction')};
+      return models.PasswordResetToken.invalidateAll(_.get(content, 'auth_user_id'), options);
     }
   ];
 
@@ -102,12 +111,8 @@ module.exports = (models) => {
    */
   behaviors.hooks.afterUpdate = [
     (instance, options) => {
-      const updateOptions = {
-        where: {auth_user_id: instance.auth_user_id},
-        individualHooks: true,
-        transaction: options.transaction
-      };
-      return models.AuthToken.update({valid: false}, updateOptions);
+      options = {transaction: _.get(options, 'transaction')};
+      return models.AuthToken.invalidateAll(_.get(instance, 'auth_user_id'), options);
     }
   ];
 

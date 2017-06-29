@@ -11,7 +11,7 @@ const DEFINITION_OBJECT = {
   token: {type: Sequelize.TEXT, allowNull: false},
   refreshToken: {type: Sequelize.STRING},
   expiresAt: {type: Sequelize.DATE},
-  valid: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true}
+  invalidatedAt: {type: Sequelize.DATE}
 };
 
 /**
@@ -33,7 +33,7 @@ const CONFIGURATION_OBJECT = {
       fields: ['provider']
     },
     {
-      fields: ['valid']
+      fields: ['invalidatedAt']
     },
     {
       fields: ['token'],
