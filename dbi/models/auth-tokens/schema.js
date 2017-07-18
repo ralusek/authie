@@ -55,6 +55,15 @@ const CONFIGURATION_OBJECT = {
 const RELATIONSHIP_DEFINITIONS = {
   USER: models => {
     models.AuthToken.belongsTo(models.AuthUser, {foreignKey: {allowNull: false}, onDelete: 'CASCADE'});
+  },
+  THIRD_PARTY_TOKEN: models => {
+    models.ThirdPartyToken && models.AuthToken.belongsTo(
+      models.ThirdPartyToken,
+      {
+        foreignKey: {allowNull: true},
+        onDelete: 'CASCADE'
+      }
+    );
   }
 };
 

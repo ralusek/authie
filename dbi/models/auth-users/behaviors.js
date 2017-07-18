@@ -137,7 +137,7 @@ module.exports = (models, cache) => {
    */
   behaviors.hooks.beforeCreate = [
     // Hash password.
-    (authUser, options) => models.AuthUser.hashPassword(authUser, options),
+    (authUser, options) => authUser.password && models.AuthUser.hashPassword(authUser, options),
     // Require email.
     (authUser, options) => {
       if (!authUser.email) return Promise.reject(new Error('AuthUser email required.'));

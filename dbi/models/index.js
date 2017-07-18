@@ -6,8 +6,10 @@ const _ = require('lodash');
 /**
  *
  */
-module.exports.bootstrap = (sequelize, cache) => {
+module.exports.bootstrap = (sequelize, cache, externalModels) => {
   const models = {};
+  externalModels = externalModels || {};
+
   Object.assign(models, {
     AuthToken: initModel('auth-tokens', models),
     PasswordResetToken: initModel('password-reset-tokens', models),
@@ -30,7 +32,7 @@ module.exports.bootstrap = (sequelize, cache) => {
 
     Model.establishRelationships = () => {
       _.forOwn(schema.RELATIONSHIP_DEFINITIONS, (establishRelationship, key) => {
-        establishRelationship(models);
+        establishRelationship(Object.assign(models, externalModels));
       });
     };
 

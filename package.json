@@ -21,6 +21,7 @@
     "pg": "^6.1.2",
     "sequelize": "^3.30.2",
     "uuid4": "^1.0.0",
-    "winston": "^2.3.1"
+    "winston": "^2.3.1",
+    "authie-third-party": "^1.1.0"
   }
 }

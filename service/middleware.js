@@ -14,11 +14,7 @@ module.exports = (service) => {
     token = token.replace(/Bearer */, '');
 
     service.verifyToken(token)
-    .then(authToken => {
-      req.authToken = authToken;
-      req.authUser = _.get(authToken, 'authUser');
-      next();
-    })
+    .then(appendToRequest(req, next))
     .catch(err => next(err));
   };
 
@@ -38,15 +34,28 @@ module.exports = (service) => {
   MW.login = _.flatten([
     (req, res, next) => {
       service.login(req.body)
-      .then(authToken => {
-        req.authToken = authToken;
-        req.authUser = _.get(authToken, 'authUser');
-        next();
-      })
+      .then(appendToRequest(req, next))
       .catch(err => next(err));
     },
     MW.enforceAuth
   ]);
 
+
+  MW.authorizeThirdParty = _.flatten([
+    (req, res, next) => {
+      service.authorizeThirdParty(req.body.code, req.body.provider)
+      .then(appendToRequest(req, next))
+      .catch(err => next(err));
+    }
+  ])
+
   return MW;
+};
+
+const appendToRequest = (req, next) => {
+  return authToken => {
+    req.authToken = authToken;
+    req.authUser = _.get(authToken, 'authUser');
+    next();
+  };
 };
