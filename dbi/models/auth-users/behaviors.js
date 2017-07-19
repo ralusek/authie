@@ -87,6 +87,7 @@ module.exports = (models, cache) => {
    *
    */
   behaviors.classMethods.hashPassword = function(authUser, options) {
+    if (options.requirePassword === false) return authUser;
     if (!authUser.password) return Promise.reject(new Error('No password provided.'));
 
     return generateHashFromPassword(authUser.password)

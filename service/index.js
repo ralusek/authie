@@ -12,6 +12,7 @@ const bootstrapModels = require('../dbi/models').bootstrap;
 const MW = require('./middleware');
 
 const CONNECTED = 'connected';
+const THIRD_PARTY_CONFIG = 'third_party_config';
 
 const CACHE = Object.freeze({
   TOKEN: 'login_token',
@@ -53,6 +54,10 @@ module.exports = class AuthenticationService {
     p(this).tokenOptions = {
       issuer: config.tokenIssuer || 'DEFAULT_ISSUER'
     };
+    p(this).thirdPartyConfig = {
+      google: config.google,
+      facebook: config.facebook
+    };
   }
 
 
@@ -74,11 +79,26 @@ module.exports = class AuthenticationService {
       p(this).modelCache.connect(config.cache)
     )
     .spread(() => {
+      let thirdPartyConfig = p(this).thirdPartyConfig;
+      let authieThirdParty = {};
+      if (thirdPartyConfig.google || thirdPartyConfig.facebook) {
+        authieThirdParty = require('authie-third-party')({
+          google: thirdPartyConfig.google,
+          facebook: thirdPartyConfig.facebook,
+          sequelize: p(this).sequelize
+        });
+        
+        p(this).deferrari.resolve(THIRD_PARTY_CONFIG, authieThirdParty);
+      }
+
       // NEVER set force to true. It will wipe those tables.
       if (config.sync) p(this).sequelize.sync({force: false});
       // Set status as connected and allow usage of the service.
       // Bootstrap the models.
-      return p(this).deferrari.resolve(CONNECTED, bootstrapModels(p(this).sequelize, p(this).modelCache));
+      return p(this).deferrari.resolve(
+        CONNECTED,
+        bootstrapModels(p(this).sequelize, p(this).modelCache, authieThirdParty.models)
+      );
     });
   }
 
@@ -94,7 +114,7 @@ module.exports = class AuthenticationService {
       return models.AuthUser.fetchByCredentials(credentials)
       .then(authUser => {
         // Generate token.
-        return signToken({id: uuid4()}, p(this).tokenSecret, p(this).tokenOptions)
+        return this.signToken()
         // Create AuthToken in DB.
         .tap(token => models.AuthToken.create({token, auth_user_id: authUser.id, provider: p(this).provider}))
         // Go redundantly through verify token path to ensure consistentcy in
@@ -143,6 +163,11 @@ module.exports = class AuthenticationService {
         return authToken;
       });
     });
+  }
+
+
+  signToken() {
+    return signToken({id: uuid4()}, p(this).tokenSecret, p(this).tokenOptions);
   }
 
 
@@ -239,6 +264,43 @@ module.exports = class AuthenticationService {
     .tap(deletedCount => {
       if (!deletedCount && (strict === true)) return Promise.reject(new Error(`Failed to remove user: ${email}.`));
     });
+  }
+
+  /**
+   * Authorizes third party then logs in or signs up the user.
+   */
+  authorizeThirdParty(authCode, provider) {
+    if (!authCode || !provider) {
+      return Promise.reject(new Error(
+        `${authCode ? '"provider"' : '"authCode"'} is missing for third party authorization.`
+      ));
+    }
+
+    return p(this).deferrari.deferUntil(THIRD_PARTY_CONFIG)
+    .then(authieThirdParty => authieThirdParty.login(authCode, provider)
+      .then(result => p(this).deferrari.deferUntil(CONNECTED)
+        .then(models => models.AuthUser.findOne({where: {email: result.email}})
+          .then(
+            authUser => authUser || models.AuthUser.create({
+              email: result.email
+            }, {
+              requirePassword: false
+            })
+          )
+          .then(authUser => this.signToken()
+            .tap(token => models.AuthToken.create({
+                token,
+                provider,
+                verified_email: true,
+                auth_user_id: authUser.id,
+                auth_third_party_token_id: result.authToken.id
+              })
+            )
+            .then(token => this.verifyToken(token))
+          )
+        )
+      )
+    );
   }
 };
 
