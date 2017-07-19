@@ -87,6 +87,7 @@ module.exports = (models, cache) => {
    *
    */
   behaviors.classMethods.hashPassword = function(authUser, options) {
+    if (options.requirePassword === false) return authUser;
     if (!authUser.password) return Promise.reject(new Error('No password provided.'));
 
     return generateHashFromPassword(authUser.password)
@@ -137,7 +138,7 @@ module.exports = (models, cache) => {
    */
   behaviors.hooks.beforeCreate = [
     // Hash password.
-    (authUser, options) => authUser.password && models.AuthUser.hashPassword(authUser, options),
+    (authUser, options) => models.AuthUser.hashPassword(authUser, options),
     // Require email.
     (authUser, options) => {
       if (!authUser.email) return Promise.reject(new Error('AuthUser email required.'));

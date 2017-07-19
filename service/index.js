@@ -269,21 +269,24 @@ module.exports = class AuthenticationService {
   /**
    * Authorizes third party then logs in or signs up the user.
    */
-  authorizeThirdParty(code, provider) {
-    if (!code || !provider) {
-      return Promise.reject(
-        new Error('Required parameters missing for third party authorization.')
-      );
+  authorizeThirdParty(authCode, provider) {
+    if (!authCode || !provider) {
+      return Promise.reject(new Error(
+        `${authCode ? '"provider"' : '"authCode"'} is missing for third party authorization.`
+      ));
     }
 
     return p(this).deferrari.deferUntil(THIRD_PARTY_CONFIG)
-    .then(authieThirdParty => authieThirdParty.login(code, provider)
+    .then(authieThirdParty => authieThirdParty.login(authCode, provider)
       .then(result => p(this).deferrari.deferUntil(CONNECTED)
         .then(models => models.AuthUser.findOne({where: {email: result.email}})
-          .then(authUser => {
-            return authUser ?
-              authUser: models.AuthUser.create({email: result.email});
-          })
+          .then(
+            authUser => authUser || models.AuthUser.create({
+              email: result.email
+            }, {
+              requirePassword: false
+            })
+          )
           .then(authUser => this.signToken()
             .tap(token => models.AuthToken.create({
                 token,
