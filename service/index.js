@@ -119,7 +119,9 @@ module.exports = class AuthenticationService {
       .then(() => this.login(credentials))
       // Attempt to login if sign up fails if fallback is explicitly true.
       .catch(err => {
-        if (fallback === true) return this.login(credentials);
+        if (fallback === true) return this.login(credentials)
+        // We reject original error if fallback fails.
+        .catch(newErr => Promise.reject(err));
         return Promise.reject(err);
       });
     });
