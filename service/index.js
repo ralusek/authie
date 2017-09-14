@@ -74,8 +74,10 @@ module.exports = class AuthenticationService {
       p(this).modelCache.connect(config.cache)
     )
     .spread(() => {
-      // NEVER set force to true. It will wipe those tables.
-      if (config.sync) p(this).sequelize.sync({force: false});
+      // WARNING: Setting Sync to "force" will WIPE the tables.
+      if (config.sync) {
+        p(this).sequelize.sync({force: config.sync === 'force'});
+      }
       // Set status as connected and allow usage of the service.
       // Bootstrap the models.
       return p(this).deferrari.resolve(CONNECTED, bootstrapModels(p(this).sequelize, p(this).modelCache));
