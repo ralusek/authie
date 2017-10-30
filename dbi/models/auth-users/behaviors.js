@@ -86,6 +86,28 @@ module.exports = (models, cache) => {
   /**
    *
    */
+  behaviors.classMethods.changePassword = function(auth_user_id, oldPassword, newPassword, confirmPassword, options) {
+    options = options || {};
+    options.explicitPasswordUpdate = true;
+    return this.scope(SCOPE.INCLUDE_PW).findOne({where: {id: auth_user_id}})
+    .then(authUser => {
+      if (!authUser) return Promise.reject(new Error(`No authUser found matching provided`));
+
+      return checkPassword(oldPassword, authUser.hashedPW)
+      .then(() => this.updatePassword(auth_user_id, newPassword))
+      .then(authUser => {
+        authUser = authUser.toJSON();
+        delete authUser.hashedPW;
+        return authUser;
+      })
+      .catch(err => Promise.reject(new Error('Cannot updatePassword, confirmPassword and password not equal.')))
+    })
+  };
+
+
+  /**
+   *
+   */
   behaviors.classMethods.hashPassword = function(authUser, options) {
     if (!authUser.password) return Promise.reject(new Error('No password provided.'));
 
