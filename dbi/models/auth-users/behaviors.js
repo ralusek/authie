@@ -213,7 +213,7 @@ module.exports = (models, cache, {pepper = ''} = {}) => {
    */
   function checkPassword({password: {provided, existing}, salt}) {
     return new Promise((resolve, reject) => {
-      const seasoned = addSeasoning(provided);
+      const seasoned = addSeasoning(provided, {salt});
       bcrypt.compare(seasoned, existing, (err, isMatch) => {
         if (err) return reject(new Error('Error occurred checking password.' + err.stack));
         if (!isMatch) return reject(new Error('Provided password does not match existing.'));

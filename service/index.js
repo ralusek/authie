@@ -44,15 +44,14 @@ module.exports = class AuthenticationService {
   }
 
 
-  configure(config) {
-    config = config || {};
-
+  configure(config = {}) {
     // It is highly recommended that the provider be the name of your application (i.e. 'dockit')
     p(this).provider = config.provider || 'application';
     p(this).tokenSecret = config.tokenSecret || 'DEFAULT_SECRET';
     p(this).tokenOptions = {
       issuer: config.tokenIssuer || 'DEFAULT_ISSUER'
     };
+    p(this).pepper = config.pepper;
   }
 
 
@@ -81,7 +80,9 @@ module.exports = class AuthenticationService {
       return p(this).deferrari.resolve(CONNECTED, bootstrapModels({
         sequelize: p(this).sequelize,
         cache: p(this).modelCache,
-        config
+        config: {
+          pepper: p(this).pepper
+        }
       }));
     });
   }
