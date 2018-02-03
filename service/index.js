@@ -80,9 +80,9 @@ module.exports = class AuthenticationService {
       // Bootstrap the models.
       return p(this).deferrari.resolve(CONNECTED, bootstrapModels({
         sequelize: p(this).sequelize,
-        cache: p(this).modelCache),
+        cache: p(this).modelCache,
         config
-      });
+      }));
     });
   }
 

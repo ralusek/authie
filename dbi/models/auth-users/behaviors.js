@@ -56,7 +56,10 @@ module.exports = (models, cache, {pepper = ''} = {}) => {
 
       // Check password.
       const provided = credentials.password;
-      return checkPassword({provided, existing: authUser.hashedPW});
+      return checkPassword({
+        password: {provided, existing: authUser.hashedPW},
+        salt: authUser.id
+      });
     })
     .then(authUser => {
       authUser = authUser.toJSON();
@@ -192,22 +195,26 @@ module.exports = (models, cache, {pepper = ''} = {}) => {
    */
   function generateHashFromPassword({password, salt}){
     return new Promise((resolve, reject) => {
-      const peppered = addPepper(password);
-      bcrypt.hash(peppered, salt, (error, hash) => {
-        if (error) return reject(error);
+      bcrypt.genSalt(CONSTANTS.SALT_WORK_FACTOR, (err, bcryptSalt) => {
+        if (err) return reject(err);
 
-        resolve(hash);
+        const seasoned = addSeasoning(password, {salt});
+        bcrypt.hash(seasoned, bcryptSalt, (error, hash) => {
+          if (error) return reject(error);
+
+          resolve(hash);
+        });
       });
-    })
+    });
   }
 
   /**
    *
    */
-  function checkPassword({provided, existing}) {
+  function checkPassword({password: {provided, existing}, salt}) {
     return new Promise((resolve, reject) => {
-      const peppered = addPepper(provided);
-      bcrypt.compare(peppered, existing, (err, isMatch) => {
+      const seasoned = addSeasoning(provided);
+      bcrypt.compare(seasoned, existing, (err, isMatch) => {
         if (err) return reject(new Error('Error occurred checking password.' + err.stack));
         if (!isMatch) return reject(new Error('Provided password does not match existing.'));
         resolve();
@@ -233,8 +240,8 @@ module.exports = (models, cache, {pepper = ''} = {}) => {
   /**
    *
    */
-  function addPepper(password) {
-    return password + pepper;
+  function addSeasoning(password, {salt = ''}) {
+    return password + salt + pepper;
   }
 
   /**
