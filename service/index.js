@@ -56,9 +56,7 @@ module.exports = class AuthenticationService {
   }
 
 
-  connect(config) {
-    config = config || {};
-
+  connect(config = {}) {
     // Establish connections on behalf of service.
     p(this).sequelize = config.sequelizeClient || sequelizeConnect.newClient(config.db);
 
@@ -80,7 +78,11 @@ module.exports = class AuthenticationService {
       }
       // Set status as connected and allow usage of the service.
       // Bootstrap the models.
-      return p(this).deferrari.resolve(CONNECTED, bootstrapModels(p(this).sequelize, p(this).modelCache));
+      return p(this).deferrari.resolve(CONNECTED, bootstrapModels({
+        sequelize: p(this).sequelize,
+        cache: p(this).modelCache),
+        config
+      });
     });
   }
 

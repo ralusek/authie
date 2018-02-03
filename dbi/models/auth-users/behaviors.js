@@ -8,7 +8,7 @@ const CONSTANTS = require('./constants');
 const SCOPE = CONSTANTS.SCOPE;
 
 
-module.exports = (models, cache) => {
+module.exports = (models, cache, {pepper = ''} = {}) => {
 
   const authUserCache = cache.childCollection({collection: CONSTANTS.MODEL});
 
@@ -56,7 +56,7 @@ module.exports = (models, cache) => {
 
       // Check password.
       const provided = credentials.password;
-      return checkPassword(provided, authUser.hashedPW);
+      return checkPassword({provided, existing: authUser.hashedPW});
     })
     .then(authUser => {
       authUser = authUser.toJSON();
@@ -89,7 +89,7 @@ module.exports = (models, cache) => {
   behaviors.classMethods.hashPassword = function(authUser, options) {
     if (!authUser.password) return Promise.reject(new Error('No password provided.'));
 
-    return generateHashFromPassword(authUser.password)
+    return generateHashFromPassword({password: authUser.password, salt: authUser.id})
     .then(hash => {
       authUser.hashedPW = hash;
       return authUser;
@@ -190,17 +190,13 @@ module.exports = (models, cache) => {
   /**
    *
    */
-  function generateHashFromPassword(password){
+  function generateHashFromPassword({password, salt}){
     return new Promise((resolve, reject) => {
-      bcrypt.genSalt(CONSTANTS.SALT_WORK_FACTOR, (err, salt) => {
-        if (err) return reject(err);
+      const peppered = addPepper(password);
+      bcrypt.hash(peppered, salt, (error, hash) => {
+        if (error) return reject(error);
 
-        // hash the password along with our new salt
-        bcrypt.hash(password, salt, (error, hash) => {
-          if (error) return reject(error);
-
-          resolve(hash);
-        });
+        resolve(hash);
       });
     })
   }
@@ -208,9 +204,10 @@ module.exports = (models, cache) => {
   /**
    *
    */
-  function checkPassword(provided, existing) {
+  function checkPassword({provided, existing}) {
     return new Promise((resolve, reject) => {
-      bcrypt.compare(provided, existing, (err, isMatch) => {
+      const peppered = addPepper(provided);
+      bcrypt.compare(peppered, existing, (err, isMatch) => {
         if (err) return reject(new Error('Error occurred checking password.' + err.stack));
         if (!isMatch) return reject(new Error('Provided password does not match existing.'));
         resolve();
@@ -231,6 +228,13 @@ module.exports = (models, cache) => {
         stringify: true
       });
     });
+  }
+
+  /**
+   *
+   */
+  function addPepper(password) {
+    return password + pepper;
   }
 
   /**

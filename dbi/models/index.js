@@ -6,7 +6,7 @@ const _ = require('lodash');
 /**
  *
  */
-module.exports.bootstrap = (sequelize, cache) => {
+module.exports.bootstrap = ({sequelize, cache, config}) => {
   const models = {};
   Object.assign(models, {
     AuthToken: initModel('auth-tokens', models),
@@ -17,7 +17,7 @@ module.exports.bootstrap = (sequelize, cache) => {
   _.forEach(models, model => model.establishRelationships());
 
   function initModel(modelName) {
-    const behaviors = require(`./${modelName}/behaviors`)(models, cache);
+    const behaviors = require(`./${modelName}/behaviors`)(models, cache, config);
     const schema = require(`./${modelName}/schema`);
     const CONSTANTS = require(`./${modelName}/constants`);
 
