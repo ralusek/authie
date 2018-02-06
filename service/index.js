@@ -44,21 +44,18 @@ module.exports = class AuthenticationService {
   }
 
 
-  configure(config) {
-    config = config || {};
-
+  configure(config = {}) {
     // It is highly recommended that the provider be the name of your application (i.e. 'dockit')
     p(this).provider = config.provider || 'application';
     p(this).tokenSecret = config.tokenSecret || 'DEFAULT_SECRET';
     p(this).tokenOptions = {
       issuer: config.tokenIssuer || 'DEFAULT_ISSUER'
     };
+    p(this).pepper = config.pepper;
   }
 
 
-  connect(config) {
-    config = config || {};
-
+  connect(config = {}) {
     // Establish connections on behalf of service.
     p(this).sequelize = config.sequelizeClient || sequelizeConnect.newClient(config.db);
 
@@ -80,7 +77,13 @@ module.exports = class AuthenticationService {
       }
       // Set status as connected and allow usage of the service.
       // Bootstrap the models.
-      return p(this).deferrari.resolve(CONNECTED, bootstrapModels(p(this).sequelize, p(this).modelCache));
+      return p(this).deferrari.resolve(CONNECTED, bootstrapModels({
+        sequelize: p(this).sequelize,
+        cache: p(this).modelCache,
+        config: {
+          pepper: p(this).pepper
+        }
+      }));
     });
   }
 
@@ -111,7 +114,9 @@ module.exports = class AuthenticationService {
       .then(() => this.login(credentials))
       // Attempt to login if sign up fails if fallback is explicitly true.
       .catch(err => {
-        if (fallback === true) return this.login(credentials);
+        if (fallback === true) return this.login(credentials)
+        // We reject original error if fallback fails.
+        .catch(newErr => Promise.reject(err));
         return Promise.reject(err);
       });
     });

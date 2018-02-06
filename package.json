@@ -14,7 +14,7 @@
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "bluebird": "3.5.0",
-    "cachie": "0.0.15",
+    "cachie": "0.0.19",
     "deferrari": "1.0.5",
     "email-validator": "1.0.7",
     "jsonwebtoken": "7.3.0",
