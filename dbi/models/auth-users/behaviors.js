@@ -2,13 +2,12 @@
 
 const Promise = require('bluebird');
 const bcrypt = require('bcryptjs');
-const emailValidator = require('email-validator');
 
 const CONSTANTS = require('./constants');
 const SCOPE = CONSTANTS.SCOPE;
 
 
-module.exports = (models, cache, {pepper = ''} = {}) => {
+module.exports = (models, cache) => {
 
   const authUserCache = cache.childCollection({collection: CONSTANTS.MODEL});
 
@@ -18,6 +17,7 @@ module.exports = (models, cache, {pepper = ''} = {}) => {
     hooks: {},
     scopes: {}
   };
+
 
 
 /******************************************************************************/
@@ -39,67 +39,6 @@ module.exports = (models, cache, {pepper = ''} = {}) => {
   };
 
 
-  /**
-   *
-   */
-  behaviors.classMethods.fetchByCredentials = function(credentials, options) {
-    const query = {};
-    if (!credentials.password) return Promise.reject(new Error('Login requires password be provided.'));
-
-    if (credentials.email) query.email = credentials.email;
-    else if (credentials.phone) query.phone = credentials.phone;
-    else return Promise.reject(new Error('No credentials provided.'));
-
-    return this.scope(SCOPE.INCLUDE_PW).findOne({where: query})
-    .tap(authUser => {
-      if (!authUser) return Promise.reject(new Error(`No authUser found matching provided credentials: ${JSON.stringify(query)}`));
-
-      // Check password.
-      const provided = credentials.password;
-      return checkPassword({
-        password: {provided, existing: authUser.hashedPW},
-        salt: authUser.id
-      });
-    })
-    .then(authUser => {
-      authUser = authUser.toJSON();
-      delete authUser.hashedPW;
-      return authUser;
-    });
-  };
-
-
-  /**
-   *
-   */
-  behaviors.classMethods.updatePassword = function(auth_user_id, newPassword, options) {
-    options = options || {};
-    options.explicitPasswordUpdate = true;
-    return this.hashPassword({password: newPassword}, options)
-    .then(modified => this.update(modified, Object.assign({
-        where: {id: auth_user_id},
-        individualHooks: true,
-        returning: true
-      }, options))
-    )
-    .spread((updateCount, values) => values[0]);
-  };
-
-
-  /**
-   *
-   */
-  behaviors.classMethods.hashPassword = function(authUser, options) {
-    if (!authUser.password) return Promise.reject(new Error('No password provided.'));
-
-    return generateHashFromPassword({password: authUser.password, salt: authUser.id})
-    .then(hash => {
-      authUser.hashedPW = hash;
-      return authUser;
-    });
-  };
-
-
 /******************************************************************************/
 /***************************** INSTANCE METHODS  ******************************/
 /******************************************************************************/
@@ -112,48 +51,9 @@ module.exports = (models, cache, {pepper = ''} = {}) => {
   /**
    *
    */
-  behaviors.hooks.beforeValidate = [
-    (authUser, options) => {
-      // Set this so that 1.) it can't be set by client, and 2.) non-null not-
-      // empty validation passes.
-      if (!options.explicitPasswordUpdate) {
-        authUser.hashedPW = 'hash';
-      }
-    }
-  ];
-
-
-  /**
-   *
-   */
-  behaviors.hooks.beforeUpdate = [
-    (authUser, options) => {
-      if (!options.explicitPasswordUpdate) {
-        delete authUser.hashedPW;
-      }
-    }
-  ];
-
-
-  /**
-   * Before Create hooks.
-   */
   behaviors.hooks.beforeCreate = [
-    // Hash password.
-    (authUser, options) => models.AuthUser.hashPassword(authUser, options),
-    // Require email.
-    (authUser, options) => {
-      if (!authUser.email) return Promise.reject(new Error('AuthUser email required.'));
-    },
-    // Format email.
-    (authUser, options) => {
-      if (authUser.email) authUser.email = authUser.email.trim();
-    },
-    // Validate email.
-    (authUser, options) => {
-      if (!emailValidator.validate(authUser.email)) {
-        return Promise.reject(new Error(`${authUser.email} is not a valid email address.`));
-      }
+    ({id}) => {
+      if (!id) return Promise.reject(new Error('Cannot create authUser without providing an id.'));
     }
   ];
 
@@ -179,48 +79,11 @@ module.exports = (models, cache, {pepper = ''} = {}) => {
 /********************************** SCOPES  ***********************************/
 /******************************************************************************/
 
-  /**
-   *
-   */
-  behaviors.scopes[SCOPE.INCLUDE_PW] = () => ({
-    attributes: {include: ['hashedPW']}
-  });
+
 
 /******************************************************************************/
 /***************************** HELPER FUNCTIONS  ******************************/
 /******************************************************************************/
-
-  /**
-   *
-   */
-  function generateHashFromPassword({password, salt}){
-    return new Promise((resolve, reject) => {
-      bcrypt.genSalt(CONSTANTS.SALT_WORK_FACTOR, (err, bcryptSalt) => {
-        if (err) return reject(err);
-
-        const seasoned = addSeasoning(password, {salt});
-        bcrypt.hash(seasoned, bcryptSalt, (error, hash) => {
-          if (error) return reject(error);
-
-          resolve(hash);
-        });
-      });
-    });
-  }
-
-  /**
-   *
-   */
-  function checkPassword({password: {provided, existing}, salt}) {
-    return new Promise((resolve, reject) => {
-      const seasoned = addSeasoning(provided, {salt});
-      bcrypt.compare(seasoned, existing, (err, isMatch) => {
-        if (err) return reject(new Error('Error occurred checking password.' + err.stack));
-        if (!isMatch) return reject(new Error('Provided password does not match existing.'));
-        resolve();
-      });
-    });
-  }
 
   /**
    *
@@ -235,13 +98,6 @@ module.exports = (models, cache, {pepper = ''} = {}) => {
         stringify: true
       });
     });
-  }
-
-  /**
-   *
-   */
-  function addSeasoning(password, {salt = ''}) {
-    return password + salt + pepper;
   }
 
   /**

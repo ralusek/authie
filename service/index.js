@@ -91,13 +91,24 @@ module.exports = class AuthenticationService {
   /**
    * Login with credentials to receive a authUser and token.
    */
-  login(credentials) {
+  login({authUserId, password = {}} = {}) {
     return p(this).deferrari.deferUntil(CONNECTED)
     .then(models => {
-      if (!credentials) return Promise.reject(new Error('Login requires credentials be provided'));
+      if (!authUserId) return Promise.reject(new Error('Login required authUserId to be provided'));
+      if (!password.type) return Promise.reject(new Error('Login requires password.type to be provided'));
+      if (!password.value) return Promise.reject(new Error('Login requires password.value to be provided'));
 
-      return models.AuthUser.fetchByCredentials(credentials)
-      .then(authUser => this.generateToken(authUser.id));
+      return Promise.join(
+        models.AuthUser.fetchById(authUserId),
+        models.PasswordHash.verifyPassword({
+          authUserId,
+          password: {
+            type: password.type,
+            value: password.value
+          }
+        })
+      )
+      .spread((authUser) => this.generateToken(authUser.id));
     });
   }
 
@@ -105,16 +116,15 @@ module.exports = class AuthenticationService {
   /**
    *
    */
-  signUp(credentials, fallback) {
+  signUp({authUserId, password = {}} = {}, fallback) {
     return p(this).deferrari.deferUntil(CONNECTED)
     .then(models => {
-      if (!credentials) return Promise.reject(new Error('Sign Up requires credentials be provided'));
-
-      return models.AuthUser.create(credentials, {password: credentials.password})
-      .then(() => this.login(credentials))
+      return models.AuthUser.create({id: authUserId}, {returning: true})
+      .then(({id: authUserId}) => models.PasswordHash.setPassword({authUserId, password}))
+      .then(() => this.login({authUserId, password}))
       // Attempt to login if sign up fails if fallback is explicitly true.
       .catch(err => {
-        if (fallback === true) return this.login(credentials)
+        if (fallback === true) return this.login({authUserId, password})
         // We reject original error if fallback fails.
         .catch(newErr => Promise.reject(err));
         return Promise.reject(err);
@@ -126,13 +136,22 @@ module.exports = class AuthenticationService {
   /**
    *
    */
+  addPassword({authUserId, password = {}} = {}) {
+    if (!password.type) return Promise.reject(new Error('Cannot add a new password without specifying a password type.'));
+    return models.PasswordHash.setPassword({authUserId, password});
+  }
+
+
+  /**
+   *
+   */
   generateToken(authUserId) {
     return p(this).deferrari.deferUntil(CONNECTED)
     .then(models => {
       // Generate token.
-      return signToken({id: uuid4()}, p(this).tokenSecret, p(this).tokenOptions)
+      return signToken({id: uuid4(), authUserId}, p(this).tokenSecret, p(this).tokenOptions)
       // Create AuthToken in DB.
-      .tap(token => models.AuthToken.create({token, auth_user_id: authUserId, provider: p(this).provider}))
+      .tap(token => models.AuthToken.create({token, authUserId, provider: p(this).provider}))
       // Go redundantly through verify token path to ensure consistentcy in
       // output. Everything is cached at this point.
       .then((token) => this.verifyToken(token));
@@ -188,7 +207,7 @@ module.exports = class AuthenticationService {
       return this.verifyToken(token)
       .then(authToken => {
         return models.AuthToken.update({valid: false}, {
-          where: {auth_user_id: authToken.auth_user_id, valid: true},
+          where: {authUserId: authToken.authUserId, valid: true},
           individualHooks: true
         });
       });
@@ -197,23 +216,23 @@ module.exports = class AuthenticationService {
 
 
   /**
-   * Creates password reset token for a given email.
+   * Creates password reset token for a given authUserId.
    */
-  requestPasswordResetToken(email) {
+  requestPasswordResetToken(authUserId) {
     return p(this).deferrari.deferUntil(CONNECTED)
     .then(models => {
-      return models.AuthUser.findOne({where: {email}})
+      return models.AuthUser.findById(authUserId)
       .then(authUser => {
-        if (!authUser) return Promise.reject(new Error(`No AuthUser found for provided email ${email}. Cannot create reset token.`));
-        return models.PasswordResetToken.create({auth_user_id: authUser.id});
+        if (!authUser) return Promise.reject(new Error(`No AuthUser found for provauthUserIded authUserId ${authUserId}. Cannot create reset token.`));
+        return models.PasswordResetToken.create({authUserId});
       });
     });
   }
 
 
   /**
-   * Redeem a password reset token. Can optionally provide an email, in which
-   * case the email corresponding the token must match (extra security).
+   * Redeem a password reset token. Can optionally provide an id, in which
+   * case the id corresponding the token must match (extra security).
    */
   redeemPasswordResetToken(passwordResetToken, newPassword, optionalEmail) {
     return p(this).deferrari.deferUntil(CONNECTED)
@@ -222,7 +241,7 @@ module.exports = class AuthenticationService {
         const options = {transaction: t};
         return models.PasswordResetToken.redeem(passwordResetToken, options, optionalEmail)
         .then(passwordResetToken => {
-          return models.AuthUser.updatePassword(passwordResetToken.auth_user_id, newPassword);
+          return models.AuthUser.updatePassword(passwordResetToken.authUserId, newPassword);
         });
       });
     });
@@ -230,34 +249,17 @@ module.exports = class AuthenticationService {
 
 
   /**
-   * Update user email address
+   * Remove user for a given id address.
    */
-  updateUserEmail(authUserId, email) {
-    if (!email) return Promise.reject(new Error('Cannot updateUserEmail, no email provided.'));
+  removeUser(id, strict) {
+    if (!id) return Promise.reject(new Error('Cannot removeUser, no id provided.'));
     return p(this).deferrari.deferUntil(CONNECTED)
-    .then(models => {
-      return models.AuthUser.update({email}, {
-        where: {id: authUserId},
-        individualHooks: true,
-        returning: true
-      });
-    });
-  }
-
-
-  /**
-   * Remove user for a given email address.
-   */
-  removeUser(email, strict) {
-    if (!email) return Promise.reject(new Error('Cannot removeUser, no email provided.'));
-    return p(this).deferrari.deferUntil(CONNECTED)
-    .then(models => models.AuthUser.destroy({where: {email}, individualHooks: true}))
+    .then(models => models.AuthUser.destroy({where: {id}, individualHooks: true}))
     .tap(deletedCount => {
-      if (!deletedCount && (strict === true)) return Promise.reject(new Error(`Failed to remove user: ${email}.`));
+      if (!deletedCount && (strict === true)) return Promise.reject(new Error(`Failed to remove user: ${id}.`));
     });
   }
 };
-
 
 
 /**

@@ -7,11 +7,8 @@ const CONSTANTS = require('./constants');
  */
 const DEFINITION_OBJECT = {
   id: {type: Sequelize.UUID, primaryKey: true, defaultValue: Sequelize.UUIDV4},
-  provider: {type: Sequelize.STRING, allowNull: false},
-  token: {type: Sequelize.TEXT, allowNull: false},
-  refreshToken: {type: Sequelize.STRING},
-  expiresAt: {type: Sequelize.DATE},
-  valid: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true}
+  type: {type: Sequelize.STRING, allowNull: false},
+  hash: {type: Sequelize.STRING, allowNull: false}
 };
 
 /**
@@ -24,26 +21,17 @@ const CONFIGURATION_OBJECT = {
     plural: CONSTANTS.MODEL_PLURAL
   },
   timestamps: true,
+  createdAt: 'createdAt',
+  updatedAt: false,
   indexes : [
     {
       fields: ['authUserId']
     },
     {
-      fields: ['provider']
+      fields: ['type']
     },
     {
-      fields: ['valid']
-    },
-    {
-      fields: ['token'],
-      unique: true
-    },
-    {
-      fields: ['refreshToken'],
-      unique: true
-    },
-    {
-      fields: ['expiresAt']
+      fields: [{attribute: 'createdAt', order: 'DESC'}]
     }
   ]
 };
@@ -53,7 +41,7 @@ const CONFIGURATION_OBJECT = {
  */
 const RELATIONSHIP_DEFINITIONS = {
   USER: models => {
-    models.AuthToken.belongsTo(models.AuthUser, {foreignKey: {allowNull: false}, onDelete: 'CASCADE'});
+    models.PasswordHash.belongsTo(models.AuthUser, {foreignKey: {name: 'authUserId', allowNull: false}, onDelete: 'CASCADE'});
   }
 };
 

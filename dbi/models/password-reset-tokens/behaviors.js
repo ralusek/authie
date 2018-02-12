@@ -87,7 +87,7 @@ module.exports = (models) => {
       return models.PasswordResetToken.update({invalidatedAt: now},
       {
         where: {
-          auth_user_id: content.auth_user_id,
+          authUserId: content.authUserId,
           invalidatedAt: null,
           redeemedAt: null,
           expiresAt: {$gt: now}
@@ -103,7 +103,7 @@ module.exports = (models) => {
   behaviors.hooks.afterUpdate = [
     (instance, options) => {
       const updateOptions = {
-        where: {auth_user_id: instance.auth_user_id},
+        where: {authUserId: instance.authUserId},
         individualHooks: true,
         transaction: options.transaction
       };

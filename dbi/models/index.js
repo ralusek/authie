@@ -10,6 +10,7 @@ module.exports.bootstrap = ({sequelize, cache, config}) => {
   const models = {};
   Object.assign(models, {
     AuthToken: initModel('auth-tokens', models),
+    PasswordHash: initModel('password-hashes', models),
     PasswordResetToken: initModel('password-reset-tokens', models),
     AuthUser: initModel('auth-users', models)
   });

@@ -46,7 +46,7 @@ module.exports = (models, cache) => {
       if (!authToken) return authToken;
 
       // Will fetch from cache, else DB.
-      return models.AuthUser.fetchById(authToken.auth_user_id)
+      return models.AuthUser.fetchById(authToken.authUserId)
       .then(authUser => Object.assign(authToken, {authUser}));
     });
   };

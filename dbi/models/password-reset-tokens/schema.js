@@ -22,10 +22,9 @@ const CONFIGURATION_OBJECT = {
     plural: CONSTANTS.MODEL_PLURAL
   },
   timestamps: true,
-  underscored: true,
   indexes : [
     {
-      fields: ['auth_user_id']
+      fields: ['authUserId']
     },
     {
       fields: ['expiresAt']
