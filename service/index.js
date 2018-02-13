@@ -137,8 +137,11 @@ module.exports = class AuthenticationService {
    *
    */
   addPassword({authUserId, password = {}} = {}) {
-    if (!password.type) return Promise.reject(new Error('Cannot add a new password without specifying a password type.'));
-    return models.PasswordHash.setPassword({authUserId, password});
+    return p(this).deferrari.deferUntil(CONNECTED)
+    .then(models => {
+      if (!password.type) return Promise.reject(new Error('Cannot add a new password without specifying a password type.'));
+      return models.PasswordHash.setPassword({authUserId, password});
+    });
   }
 
 
