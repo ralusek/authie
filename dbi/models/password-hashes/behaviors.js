@@ -41,7 +41,10 @@ module.exports = (models, cache, {pepper = ''} = {}) => {
       },
       order: [['createdAt', 'DESC']]
     })
-    .then(({hash: existing} = {}) => {
+    .then(passwordHash => {
+      if (!passwordHash) return Promise.reject(`Could not find password hash of type ${password.type} for authUser ${authUserId}.`);
+
+      const {hash: existing } = passwordHash;
       if (!existing) return Promise.reject(`Could not verify password, none found of type ${password.type}.`);
 
       return checkPassword({
